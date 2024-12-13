@@ -1,15 +1,42 @@
 package io.scriptor.dom;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class HTMLElement implements Iterable<HTMLElement> {
+public abstract class HTMLElement extends Node {
 
+    private final String tag;
     private final Map<String, String> attrs = new HashMap<>();
-    private final List<HTMLElement> children = new ArrayList<>();
-    private HTMLElement parent;
 
-    protected HTMLElement() {
+    protected HTMLElement(String tag) {
+        this.tag = tag;
+    }
+
+    @Override
+    public String text() {
+        return childNodes()
+                .filter(Node::hasText)
+                .map(Node::text)
+                .collect(Collectors.joining());
+    }
+
+    public Stream<HTMLElement> childElements() {
+        return childNodes()
+                .filter(HTMLElement.class::isInstance)
+                .map(HTMLElement.class::cast);
+    }
+
+    public <T extends HTMLElement> Optional<T> findElementByTag(String tag) {
+        if (this.tag.equals(tag))
+            return Optional.of((T) this);
+        return childElements()
+                .map(element -> element.<T>findElementByTag(tag))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
     }
 
     public String attr(String name) {
@@ -275,68 +302,5 @@ public abstract class HTMLElement implements Iterable<HTMLElement> {
 
     public HTMLElement writingsuggestions(String value) {
         return attr("writingsuggestions", value);
-    }
-
-    /**
-     * generate a stream of children elements
-     *
-     * @return a stream of this element's children
-     */
-    public Stream<HTMLElement> children() {
-        return children.stream();
-    }
-
-    /**
-     * append a child into this element's children list
-     *
-     * @param child the child
-     * @return this element
-     */
-    public HTMLElement append(HTMLElement child) {
-        if (child.parent != null)
-            child.parent.remove(child);
-        child.parent = this;
-        children.add(child);
-        return this;
-    }
-
-    /**
-     * prepend a child into this element's children list
-     *
-     * @param child the child
-     * @return this element
-     */
-    public HTMLElement prepend(HTMLElement child) {
-        if (child.parent != null)
-            child.parent.remove(child);
-        child.parent = this;
-        children.addFirst(child);
-        return this;
-    }
-
-    /**
-     * remove a child from this element
-     *
-     * @param child the child
-     * @return this element
-     */
-    public HTMLElement remove(HTMLElement child) {
-        children.remove(child);
-        child.parent = null;
-        return this;
-    }
-
-    /**
-     * get this element's parent element
-     *
-     * @return the parent element
-     */
-    public HTMLElement parent() {
-        return parent;
-    }
-
-    @Override
-    public Iterator<HTMLElement> iterator() {
-        return children.iterator();
     }
 }
