@@ -1,15 +1,40 @@
 package io.scriptor.dom;
 
+import imgui.ImGui;
+import io.scriptor.Tab;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Node implements Iterable<Node> {
 
+    private final String tag;
     private Node parent;
     private String text;
     private final List<Node> children = new ArrayList<>();
+
+    public Node(String tag) {
+        this.tag = tag;
+    }
+
+    public void draw(Tab tab) {
+        if (text != null) {
+            final var txt = text();
+            if (!txt.isEmpty())
+                ImGui.textUnformatted(txt);
+        } else drawChildNodes(tab);
+    }
+
+    public void drawChildNodes(Tab tab) {
+        children.forEach(node -> node.draw(tab));
+    }
+
+    public String tag() {
+        return tag;
+    }
 
     public Node parentNode() {
         return parent;
@@ -20,7 +45,14 @@ public class Node implements Iterable<Node> {
     }
 
     public String text() {
-        return text;
+        if (text != null)
+            return text.trim();
+
+        return children
+                .stream()
+                .filter(Node::hasText)
+                .map(Node::text)
+                .collect(Collectors.joining());
     }
 
     public Node text(String value) {

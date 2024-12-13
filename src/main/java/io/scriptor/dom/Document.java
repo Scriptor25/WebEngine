@@ -1,7 +1,5 @@
 package io.scriptor.dom;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -18,72 +16,76 @@ public class Document {
         return document;
     }
 
-    public static Node from(org.jsoup.nodes.Node node) {
-        if (node.normalName().startsWith("#"))
-            return new Node().text(node.outerHtml());
+    public static Node from(org.jsoup.nodes.Node jsoup) {
+        if (jsoup.normalName().equals("#text"))
+            return new Node("#text").text(jsoup.outerHtml());
 
-        final var element = switch (node.normalName()) {
-            case "html" -> new HTMLRootElement();
-            case "head" -> new HTMLHeadElement();
-            case "title" -> new HTMLTitleElement();
-            case "meta" -> new HTMLMetaElement();
-            case "script" -> new HTMLScriptElement();
-            case "link" -> new HTMLLinkElement();
-            case "style" -> new HTMLStyleElement();
-            case "noscript" -> new HTMLNoScriptElement();
-            case "body" -> new HTMLBodyElement();
-            case "div" -> new HTMLDivElement();
+        if (jsoup.normalName().startsWith("#"))
+            return new Node(jsoup.normalName());
+
+        final var node = switch (jsoup.normalName()) {
             case "a" -> new HTMLAnchorElement();
-            case "span" -> new HTMLSpanElement();
-            case "picture" -> new HTMLPictureElement();
-            case "img" -> new HTMLImageElement();
+            case "body" -> new HTMLBodyElement();
             case "button" -> new HTMLButtonElement();
-            case "input" -> new HTMLInputElement();
             case "dialog" -> new HTMLDialogElement();
+            case "div" -> new HTMLDivElement();
             case "form" -> new HTMLFormElement();
-            case "textarea" -> new HTMLTextAreaElement();
-            case "ul" -> new HTMLULElement();
-            case "li" -> new HTMLLIElement();
-            case "hr" -> new HTMLHRElement();
             case "h1" -> new HTMLH1Element();
             case "h2" -> new HTMLH2Element();
             case "h3" -> new HTMLH3Element();
             case "h4" -> new HTMLH4Element();
             case "h5" -> new HTMLH5Element();
             case "h6" -> new HTMLH6Element();
+            case "head" -> new HTMLHeadElement();
+            case "header" -> new HTMLHeaderElement();
+            case "hr" -> new HTMLHRElement();
+            case "html" -> new HTMLRootElement();
+            case "img" -> new HTMLImageElement();
+            case "input" -> new HTMLInputElement();
+            case "li" -> new HTMLLIElement();
+            case "link" -> new HTMLLinkElement();
+            case "meta" -> new HTMLMetaElement();
+            case "nav" -> new HTMLNavElement();
+            case "noscript" -> new HTMLNoScriptElement();
             case "p" -> new HTMLParagraphElement();
+            case "picture" -> new HTMLPictureElement();
+            case "script" -> new HTMLScriptElement();
+            case "span" -> new HTMLSpanElement();
+            case "style" -> new HTMLStyleElement();
+            case "textarea" -> new HTMLTextAreaElement();
+            case "title" -> new HTMLTitleElement();
+            case "ul" -> new HTMLULElement();
 
-            case "svg", "center", "g-popup" -> null;
-
-            default -> throw new IllegalStateException("unhandled case: " + node.normalName());
+            default -> {
+                System.err.printf("unhandled node type '%s'%n", jsoup.normalName());
+                yield new Node(jsoup.normalName());
+            }
         };
 
-        if (element == null)
-            return null;
+        if (node instanceof HTMLElement el)
+            jsoup
+                    .attributes()
+                    .forEach(attr -> el.attr(attr.getKey(), attr.getValue()));
 
-        node
-                .attributes()
-                .forEach(attr -> element.attr(attr.getKey(), attr.getValue()));
-
-        node
+        jsoup
                 .childNodes()
                 .stream()
                 .map(Document::from)
                 .filter(Objects::nonNull)
-                .forEach(element::appendNode);
+                .forEach(node::appendNode);
 
-        return element;
+        return node;
     }
 
-    private final List<Node> elements = new ArrayList<>();
+    private final Node rootNode = new Node(null);
 
-    public void append(Node element) {
-        elements.add(element);
+    public void append(Node node) {
+        rootNode.appendNode(node);
     }
 
     public <T extends HTMLElement> Optional<T> findElementByTag(String tag) {
-        return elements
-                .stream()
+        return rootNode
+                .childNodes()
                 .filter(HTMLElement.class::isInstance)
                 .map(HTMLElement.class::cast)
                 .map(element -> element.<T>findElementByTag(tag))
@@ -95,7 +97,11 @@ public class Document {
     public String title() {
         return this
                 .<HTMLTitleElement>findElementByTag("title")
-                .orElseThrow()
-                .text();
+                .map(Node::text)
+                .orElse(null);
+    }
+
+    public Node rootNode() {
+        return rootNode;
     }
 }

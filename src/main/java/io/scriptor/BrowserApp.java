@@ -17,7 +17,7 @@ public class BrowserApp extends Application {
     private final List<Runnable> scheduleList = new Vector<>();
 
     public BrowserApp() {
-        newTab("https://google.com/");
+        newTab("file:///C:/Users/felix.schreiber/Downloads/test.html");
     }
 
     @Override
@@ -27,7 +27,9 @@ public class BrowserApp extends Application {
 
     @Override
     protected void preRun() {
-        ImGui.getIO().addConfigFlags(ImGuiConfigFlags.DockingEnable);
+        final var io = ImGui.getIO();
+        io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
+        io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
     }
 
     @Override
@@ -46,8 +48,8 @@ public class BrowserApp extends Application {
             ImGui.endMainMenuBar();
         }
 
-        ImGui.dockSpaceOverViewport();
-        tabs.forEach(Tab::draw);
+        final var dockspace = ImGui.dockSpaceOverViewport();
+        tabs.forEach((tab, open) -> tab.draw(dockspace, open));
 
         tabs
                 .entrySet()

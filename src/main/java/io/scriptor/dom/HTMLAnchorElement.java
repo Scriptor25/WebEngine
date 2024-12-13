@@ -1,9 +1,23 @@
 package io.scriptor.dom;
 
+import imgui.ImGui;
+import imgui.flag.ImGuiCol;
+import io.scriptor.Tab;
+
 public class HTMLAnchorElement extends HTMLElement {
 
     public HTMLAnchorElement() {
         super("a");
+    }
+
+    @Override
+    public void draw(Tab tab) {
+        ImGui.pushStyleColor(ImGuiCol.Text, 0xffff0000);
+        if (ImGui.selectable("##" + hashCode()))
+            tab.load(href());
+        ImGui.sameLine();
+        super.draw(tab);
+        ImGui.popStyleColor();
     }
 
     public String download() {

@@ -3,24 +3,14 @@ package io.scriptor.dom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class HTMLElement extends Node {
 
-    private final String tag;
     private final Map<String, String> attrs = new HashMap<>();
 
     protected HTMLElement(String tag) {
-        this.tag = tag;
-    }
-
-    @Override
-    public String text() {
-        return childNodes()
-                .filter(Node::hasText)
-                .map(Node::text)
-                .collect(Collectors.joining());
+        super(tag);
     }
 
     public Stream<HTMLElement> childElements() {
@@ -30,7 +20,7 @@ public abstract class HTMLElement extends Node {
     }
 
     public <T extends HTMLElement> Optional<T> findElementByTag(String tag) {
-        if (this.tag.equals(tag))
+        if (this.tag().equals(tag))
             return Optional.of((T) this);
         return childElements()
                 .map(element -> element.<T>findElementByTag(tag))
